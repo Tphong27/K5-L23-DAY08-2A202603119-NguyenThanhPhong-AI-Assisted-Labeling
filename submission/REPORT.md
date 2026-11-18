@@ -1,77 +1,88 @@
-# Báo cáo Day 08 — <<MSHV - Họ và tên>>
+# Báo cáo Day 08 — 2A202603119 - Nguyễn Thanh Phong
 
-> Một file duy nhất cho cả bài (đã gộp recipe, QC và ghi chú cá nhân). Mọi con số kèm **mẫu số** và nguồn (file nào). Viết bằng lời của bạn.
+> Một file duy nhất cho cả bài (đã gộp recipe, QC và ghi chú cá nhân). Mọi con số kèm **mẫu số** và nguồn (file nào).
 
 ## 1. Model và recipe (Part 2–3)
 
-| Lớp | Model + cỡ | Ngưỡng | Vì sao (dẫn `run_id` trong `model_log.csv`) |
-|---|---|---|---|
-| person / bicycle / motorbike / car / bus / truck | <<YOLO26m>> | <<theo lớp, từ threshold_sweep>> | <<>> |
-| three_wheeler | <<YOLOE-26s, prompt: ...>> | <<>> | <<>> |
+| Lớp             | Model + cỡ                                             | Ngưỡng dùng khi gộp | Căn cứ                                                                                                                          |
+| --------------- | ------------------------------------------------------ | ------------------: | ------------------------------------------------------------------------------------------------------------------------------- |
+| `person`        | YOLO26s                                                |                0.30 | `r03–r04`; quét trên 19 vật gold: recall tối đa 89%, chưa đạt mục tiêu 90%, nên giữ ngưỡng mặc định.                            |
+| `bicycle`       | YOLO26s                                                |                0.30 | Chỉ 1 vật gold; không đủ mẫu để chọn ngưỡng riêng.                                                                              |
+| `motorbike`     | YOLO26s                                                |                0.35 | Quét trên 11 vật gold: recall 91%, precision 91%; `r03–r04` cho thấy ngưỡng 0.50 làm mất box.                                   |
+| `car`           | YOLO26s                                                |                0.30 | Quét trên 8 vật gold: recall tối đa 88%, chưa đạt mục tiêu 90%; giữ mặc định.                                                   |
+| `bus`           | YOLO26s                                                |                0.30 | Không có đủ bằng chứng từ 4 ảnh gold để chọn ngưỡng riêng; dùng mặc định.                                                       |
+| `truck`         | YOLO26s                                                |                0.30 | Chỉ 1 vật gold; không đủ mẫu để chọn ngưỡng riêng.                                                                              |
+| `three_wheeler` | YOLOE-26s; prompt `tuk-tuk`, `cyclo`, `cargo tricycle` |                0.30 | `r05`: tìm được hai xích lô ở `img_032` nhưng sót chiếc bên phải; quét trên 7 vật gold cho recall tối đa 86%, nên giữ mặc định. |
 
-- Lệnh `merge_prelabels.py` đã dùng (dán nguyên): <<>>
-- **Phiên bản SAM bạn chọn** (SAM 1 / 2.1 / 3) và lý do: <<chất lượng mask, tốc độ, RAM, quyền truy cập>>
-- Lỗi nào **không sửa được bằng đổi ngưỡng** (ví dụ tuk-tuk bị gọi `car`)? Sửa thế nào? <<>>
-- Box **điểm cao mà sai** hoặc **điểm thấp mà đúng** (ảnh nào): <<>>
-- Giới hạn: chọn ngưỡng trên chính gold (4 ảnh) nên số đo máy trên gold là lạc quan: <<>>
+- Nguồn ngưỡng: `submission/qc/threshold_sweep.md` và `.csv` (4 ảnh gold). Chuỗi dùng ở Part 4: `--thr "motorbike=0.35" --conf 0.3`.
+- Lệnh `merge_prelabels.py` đã dùng: `python scripts/merge_prelabels.py work/prelabel/yoloe_all/pre.coco.json work/prelabel/y26_all/pre.coco.json --thr "motorbike=0.35" --conf 0.3 --iou 0.6 --split "batch,gold" --out work/prelabel/merged_review/pre.coco.json`. Kết quả: 373 box trên batch + gold (nguồn: đầu ra lệnh gộp).
+- SAM đã thử: **SAM 2.1 base** (`sam2.1_b.pt`) trên CPU, 10 mask/2 ảnh ở `r06` (4,38 giây/ảnh). Ở `img_013`, SAM tạo mask từ box người; xe ba bánh không có mask vì YOLO26 không cung cấp box lớp này.
+- Lỗi không sửa được bằng ngưỡng: YOLO26 không có lớp `three_wheeler` trong bộ lớp COCO; cần nguồn YOLOE và vẫn phải duyệt bằng mắt.
+- Ví dụ box điểm cao mà sai hoặc điểm thấp mà đúng: **chưa kết luận**, sẽ ghi sau khi duyệt ảnh ở Part 4.
+- Giới hạn: chỉ có 4 ảnh gold; ngưỡng được chọn và số đo máy được tính trên cùng tập này nên precision/recall về sau có thể lạc quan. Các lớp chỉ có 1 vật gold không đủ mẫu để suy ra ngưỡng riêng.
 
 ## 2. AI error profile (từ `qc/review_stats.md`)
 
-| Trạng thái | Số | Tỉ lệ | Mẫu số |
-|---|---|---|---|
-| accepted | <<>> | <<>> | <<box máy>> |
-| edited | <<>> | <<>> | <<>> |
-| deleted | <<>> | <<>> | <<>> |
-| added | <<>> | <<>> | <<đối tượng sau duyệt>> |
+| Trạng thái |  Số |           Tỉ lệ | Mẫu số                  |
+| ---------- | --: | --------------: | ----------------------- |
+| accepted   | 195 | 195/313 = 62,3% | 313 box máy             |
+| edited     |  86 |  86/313 = 27,5% | 313 box máy             |
+| deleted    |  30 |   30/313 = 9,6% | 313 box máy             |
+| added      |  74 |  74/360 = 20,6% | 360 đối tượng sau duyệt |
 
-- Lớp nào máy tệ nhất? Vì sao (dẫn ảnh)? <<>>
-- So với gold: precision / recall của **máy** <<>> (mẫu số: <<đối tượng gold>>)
+- Nguồn: `submission/qc/review_stats.md` sau lượt sửa cuối; script đã loại 29 đối tượng quanh bẫy khỏi bảng AI error profile.
+- Có 5 trường hợp đổi lớp (được tính trong deleted + added); số vật máy sót thật ước tính 74 − 5 = 69.
+- Theo số lượng tuyệt đối, `person` (29 added) và `motorbike` (26 added) là hai lớp phải vẽ bổ sung nhiều nhất; số này chưa chuẩn hóa theo số vật của từng lớp.
+- Máy so với gold: TP=37, FP=5, FN=10; precision 37/42 = 88,1%, recall 37/47 = 78,7% (4 ảnh gold, 47 đối tượng được chấm; nguồn: `review_stats.md`).
 
 ## 3. Thiên kiến tự động hóa và ảnh bẫy
 
-- Bắt bẫy: <<.../12>>; loại nào lọt: <<>>; vì sao (bạn đã bỏ bước nào của checklist)? <<>>
-- Accepted cao mà bắt bẫy thấp (hoặc ngược lại) nói gì về cách bạn duyệt? <<>>
+- Lượt duyệt đầu bắt được 8/12 bẫy = 66,7%, dưới ngưỡng 10/12. Bốn bẫy lọt ban đầu: `img_034` (loose), `img_004` (wrong_class), `img_022` (extra), `img_027` (wrong_class).
+- Sau khi xem đáp án và sửa lại, kết quả cuối là 12/12 = 100% (loose 3/3, missing 3/3, extra 3/3, wrong_class 3/3; nguồn: `submission/qc/review_stats.md`). Kết quả này là **sau sửa**, không phải tỷ lệ bắt bẫy mù lần đầu.
+- Lượt đầu giữ nguyên 205/313 box máy nhưng vẫn lọt 4/12 bẫy: tỷ lệ accepted tự nó không chứng minh đã phát hiện hết lỗi. Cần quét ảnh trước khi xem box và kiểm riêng các lớp, box thừa, box lỏng.
 
 ## 4. Máy có đáng dùng không?
 
-- Thời gian (từ `time_log.csv`): gán tay <<... phút/ảnh>> vs duyệt <<... phút/ảnh>>. Thiên lệch (bạn gán gold trước nên đã quen cảnh): <<>>
-- Kết luận: <<có / không / chỉ cho lớp nào>>, dựa trên <<số liệu>>
-- **Ba quy tắc giảm thiên kiến của bạn** (mỗi quy tắc kiểm tra được bằng số hoặc việc làm):
-  1. <<>>
-  2. <<>>
-  3. <<>>
+- Thời gian được báo cáo trong `submission/time_log.csv`: gán tay 4 ảnh gold hết 39 phút = 9,75 phút/ảnh; duyệt 24 ảnh có pre-label hết 40 phút = 1,67 phút/ảnh. Chênh lệch thô là khoảng 82,9% thời gian/ảnh.
+- So sánh thời gian chỉ mang tính mô tả: gold và batch là các ảnh khác nhau, số vật mỗi ảnh khác nhau, và sau 4 ảnh gold người gán đã quen hơn. Không thể quy toàn bộ chênh lệch cho model.
+- Đánh giá theo số hiện có: pre-label giúp giảm thời gian thao tác báo cáo, nhưng cần duyệt kỹ vì 74/360 đối tượng sau duyệt được thêm và lượt đầu chỉ bắt 8/12 bẫy. Ưu tiên dùng YOLO26s cho 6 lớp COCO và YOLOE làm gợi ý `three_wheeler`, luôn có người kiểm.
+- Ba quy tắc cho lượt duyệt sau (có thể kiểm tra được):
+  1. Ẩn nhãn và đếm vật theo lớp trước khi hiện box trên 24/24 ảnh; ghi dấu hoàn tất từng ảnh.
+  2. Kiểm mọi box theo thứ tự bỏ sót → thừa → sai lớp → lỏng; ghi lại số box thêm/xóa/sửa sau mỗi nhóm 10 ảnh.
+  3. Nghỉ 3–5 phút sau khoảng 10 ảnh và kiểm lại các box điểm cao ở lớp dễ nhầm (`car`/`three_wheeler`, `motorbike`/`bicycle`).
 
 ## 5. Mask SAM cho 3 vật (Part 5)
 
-| Ảnh | SAM (phiên bản) | Số click | Mask gồm người lái / hàng hoá? | Lỗi quan sát | File trong `masks/` |
-|---|---|---|---|---|---|
-| <<img_0xx>> | <<>> | <<>> | <<>> | <<>> | <<>> |
+| Ảnh           | SAM (phiên bản)                   | Số click                    | Mask gồm người lái / hàng hoá?                                                               | Lỗi quan sát                                                                           | File trong `masks/`         |
+| ------------- | --------------------------------- | --------------------------- | -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------- |
+| `img_013.jpg` | SAM 2.1 base (`sam2.1_b.pt`), CPU | 2 (1 dương, 1 âm; thêm box) | Mask chủ yếu là người lái, không gồm cả xe.                                                  | Vùng chân/chỗ ngồi sát thân xe khó phân định bằng một cặp click; 32.796 px, 2 polygon. | `driver_img013.jpg`         |
+| `img_032.jpg` | SAM 2.1 base, CPU                 | 2 (1 dương, 1 âm; thêm box) | Mask bám xích lô ở giữa ảnh, không lấy toàn bộ người đứng cạnh.                              | Các khoảng hở trong khung và mép xe cần kiểm bằng mắt; 55.362 px, 1 polygon.           | `cyclo_img032.jpg`          |
+| `img_003.jpg` | SAM 2.1 base, CPU                 | 2 (1 dương, 1 âm; thêm box) | Mask gồm mái, thùng xe và phần hàng nằm trong thùng; người nhìn thấy trên xe cần nhãn riêng. | Ranh giới giữa xe, hàng hóa và người chưa rõ với một mask; 106.409 px, 2 polygon.      | `cargo_tricycle_img003.jpg` |
 
-- Đối chiếu guideline mục 4.2: quy tắc nào giúp, quy tắc nào thiếu? <<>>
-- *(Tuỳ chọn)* Interactor SAM trong CVAT: làm được / không (lỗi gì, đã thử gì); khác gì offline: <<>>
+- Nguồn: ba ảnh overlay thực tế trong `submission/masks/` và đầu ra của `sam2_points.py`. SAM dùng click + box để tạo mask, không tự quyết định lớp.
+- Đối chiếu guideline v1.0 mục 4.2: quy tắc bám đường biên phần nhìn thấy và tách hai vật chạm nhau giúp kiểm mask; ranh giới hàng hóa gắn xe, người ngồi trong xe và khoảng hở khung xe là các ca cần xem lại khi calibration.
+- Interactor SAM trực tiếp trong CVAT: chưa thử; ba kết quả trên được tạo bằng script offline.
 
 ## 6. Calibration (Part 6)
 
-- Số quyết định: <<>> (`calibration_decisions.csv`); quan trọng nhất (dẫn `CAL-xx`): <<>>
-- Quy tắc mới đã vào `guideline_v1.1_calibrated.md`: <<>>
-- Nguyên nhân gốc: <<guideline mơ hồ / chưa nắm quy tắc / máy>>
+- Đã ghi 3 quyết định trong `submission/qc/calibration_decisions.csv`: `CAL-01` (lỗi máy ở `img_032.jpg`), `CAL-02` (hàng rời trên xe ba gác ở `img_003.jpg`) và `CAL-03` (kính/người lái trong mask ở `img_013.jpg`).
+- Quyết định ảnh hưởng rõ nhất đến cách vẽ mask là `CAL-02`: mái và thùng gắn cố định thuộc xe, hàng rời và người tách khỏi mask xe. `CAL-03` phân biệt kính thật với lỗ hở và tách người lái khỏi xe.
+- Các quy tắc bổ sung có ảnh dẫn và mã ca trong `submission/guidelines/guideline_v1.1_calibrated.md`. Taxonomy tăng `version` lên `v1.1`; lớp, thuộc tính và mục `rules` giữ nguyên.
+- Nguyên nhân: `CAL-01` là giới hạn YOLOE (bỏ sót vật); `CAL-02` và `CAL-03` là hai câu hỏi mở của guideline v1.0 cần làm rõ. Năm câu hỏi mở khác chưa đủ bằng chứng trong ba ca này để chốt.
 
 ## 7. QC và quyết định (Part 6)
 
-- Mẫu: <<n>> ảnh (<<m>> ảnh `can_review` + <<k>> ngẫu nhiên, seed 42); người kiểm: bạn (**hạn chế**: bạn vừa là người duyệt).
-- Lỗi theo **đối tượng**: <<.../... = ...%>> · theo **ảnh**: <<.../... = ...%>> (ngưỡng Release ≤ 2%)
-- Top lỗi (trong: bỏ sót, thừa, sai lớp, sai vị trí/kích thước, sai thuộc tính, sai mask) + một ảnh ví dụ mỗi loại: <<>>
-- **Giới hạn mẫu nhỏ** (cận trên 95% trong `qc_report_auto.md`): <<>>
-- Script kiểm được / không kiểm được (ví dụ ôm sát, cùng bỏ sót với máy, theo checklist thật): <<>>
+- Vòng 1: `build_release.py` tạo 24 ảnh batch, 392 annotation. Mẫu `qc_sample.py --n 5 --seed 42` gồm `img_003`, `img_006`, `img_014`, `img_031`, `img_035` với 75 đối tượng. Lượt kiểm overlay do ChatGPT hỗ trợ phát hiện hai box `person` thừa trên quần áo treo ở `img_031.jpg` (ID 339, 340). Kết quả 2/75 đối tượng = 2,7% và 1/5 ảnh = 20,0%; quyết định vòng 1 là **Rework**. Phiếu, báo cáo, thống kê và overlay vòng 1 được lưu ở `submission/qc/reviews/round-01/`.
+- Đã sửa trong CVAT và export `submission/labels/qc_fixed.json`: 24 ảnh, 390 annotation. Bản `batch_reviewed.json` 392 annotation trước sửa không còn; để script xây release chạy được, `submission/labels/batch_reviewed.json` hiện là bản sao của export đã sửa. Vì vậy không thể đối chiếu trực tiếp hai file COCO trước/sau; bằng chứng vòng 1 còn ở phiếu QC, báo cáo, thống kê và ảnh overlay đã lưu. `build_release.py` thay toàn bộ 24 ảnh theo `qc_fixed.json`, tạo release candidate v1.1 gồm 24 ảnh, 390 annotation (18 `ignore_region`); nguồn: `submission/release/release_manifest.json`.
+- Vòng 2: lấy lại mẫu với `qc_sample.py --n 5 --seed 42 --force`, vẫn là 5 ảnh trên, nay có 73 đối tượng. ChatGPT đối chiếu ảnh gốc và overlay, ghi 0/73 đối tượng lỗi = 0,0% và 0/5 ảnh lỗi = 0,0% trong `submission/qc/qc_review.csv`; hai box giả trên `img_031` đã biến mất. Phiếu, báo cáo và overlay vòng 2 được lưu ở `submission/qc/reviews/round-02/`.
+- `qc_report.py` gợi ý **Release** theo số lỗi quan sát được (0/5 ≤ 2%). Với 5 ảnh không thấy lỗi, cận trên Wilson 95% cho tỉ lệ ảnh lỗi thực là khoảng 43%; mẫu này không chứng minh được toàn lô dưới 2%. Phiếu vòng 2 do ChatGPT hỗ trợ kiểm; đã xác nhận đồng ý với kết quả QC trong trao đổi ngày 2026-11-18. Script chỉ tính số từ phiếu, không tự phát hiện mọi box sai hoặc vật bị bỏ sót.
 
-**Quyết định: <<Release / Hold / Rework>>**, ngày <<YYYY-MM-DD>>. Lý do (đi theo Hold → Rework → Release): <<>>
-Nếu Rework / Hold, việc cần làm tiếp: <<>>
+**Quyết định cuối: Release**, ngày 2026-11-18, xác nhận kết quả QC vòng 2. Mẫu có 0/5 ảnh lỗi, đạt quy tắc ngưỡng quan sát ≤ 2%; 12/12 bẫy đã được xử lý sau sửa. Đây là quyết định dựa trên mẫu nhỏ, không phải bảo đảm tỉ lệ lỗi thực của toàn lô ≤ 2%.
 
 ## 8. Ghi chú cá nhân
 
-- **Dùng AI để làm bài** (công cụ nào, việc gì, kiểm tra thế nào; "không dùng" nếu không): <<>>
-- Gold có bị nhiễm không (bạn có nhìn pre-label hay hỏi AI trước khi gán xong)? <<không / có, như sau: ...>>
-- Máy / GPU / CVAT dùng; vướng mắc cài đặt: <<>>
-- Dùng cache `data/cache/` thay vì tự chạy? <<không / có, vì ...>>
-- Lỗi / bug script đã gặp (nếu có): <<>>
-- Một điều bạn làm khác lần sau: <<>>
+- Công cụ AI đã dùng: YOLO26s tạo box cho các lớp COCO, YOLOE-26s gợi ý `three_wheeler`, SAM 2.1 base tạo mask từ click/box; ChatGPT hỗ trợ giải thích lệnh, đối chiếu ảnh overlay và soạn phần mô tả số đo. Nhãn batch được người học duyệt trong CVAT; các nhận xét cần được người học kiểm lại trên ảnh gốc.
+- Môi trường: Windows 11, CPU (không GPU), Python trong `.venv`, CVAT local bằng Docker. YOLO26s, YOLOE-26s và SAM 2.1 base đã chạy được.
+- Cache `data/cache/`: không dùng cho các lần chạy đã ghi; các file pre-label được tạo bằng script trên máy.
+- Vướng mắc thao tác đã xử lý: Task CVAT ban đầu thiếu bộ 8 nhãn nên import lỗi; file COCO export cần đưa về đúng đường dẫn/tên; một lần export có tên `batch_reviewed..json` nên `validate_labels.py --all` không nhận.
+- Điều cần kiểm ở lần làm tiếp: xác nhận nhãn Project/Task trước khi import và giữ bằng chứng lượt review đầu riêng với kết quả sau khi xem đáp án bẫy.

@@ -1,1 +1,4 @@
-case_id,image,nguon,van_de,quyet_dinh,quy_tac_ghi_vao_guideline,phien_ban_guideline
+﻿"case_id","image","nguon","van_de","quyet_dinh","quy_tac_ghi_vao_guideline","phien_ban_guideline"
+"CAL-01","img_032.jpg","loi_may","YOLOE chỉ gợi ý 2 xích lô và bỏ sót chiếc ở mép phải","Gán từng xích lô nhìn rõ là three_wheeler kể cả khi đang đỗ và model không tạo box; quét cả mép ảnh để bổ sung box","Mục 2 và 4.1: xích lô đang đỗ vẫn là three_wheeler; pre-label không thay bước tìm vật bỏ sót","v1.1"
+"CAL-02","img_003.jpg","cau_hoi_mo","Ranh giới xe ba gác với rau quả/hàng rời nằm trong thùng khi tạo mask","Box xe ôm phần kết cấu nhìn thấy gồm mái và thùng; mask xe chỉ gồm kết cấu gắn xe, loại hàng rời và người; không tạo lớp riêng cho hàng","Mục 4.1.5 và 4.2: hàng rời không thuộc mask xe; mái/thùng gắn cố định thuộc xe","v1.1"
+"CAL-03","img_013.jpg","cau_hoi_mo","Kính chắn gió trong suốt và người lái nhìn qua khung xe ba bánh thuộc mask nào","Kính chắn gió hiện hữu là phần xe và thuộc mask three_wheeler; lỗ hở không có kính không thuộc xe; vùng người lái nhìn thấy thuộc mask person riêng","Mục 4.2: phân biệt kính thật với lỗ hở; tách mask người lái khỏi xe","v1.1"
