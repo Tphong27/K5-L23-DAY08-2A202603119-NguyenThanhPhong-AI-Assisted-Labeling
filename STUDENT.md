@@ -5,7 +5,7 @@
 - Lớp (L2 / L3 / khác): L2
 - Tài khoản GitHub: Tphong27
 - Repo bài nộp (URL): https://github.com/Tphong27/K5-L23-DAY08-2A202603119-NguyenThanhPhong-AI-Assisted-Labeling
-- Commit chốt bài (hash): (điền sau commit cuối)
+- Commit chốt bài (hash): 995d344f994a81af8e6807c749c6f790f1ef6d64
 - Máy: Windows 11, không GPU (torch 2.15.0+cpu, chạy CPU)
 - CVAT local: v2.74.1
 
