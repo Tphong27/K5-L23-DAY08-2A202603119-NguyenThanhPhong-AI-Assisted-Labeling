@@ -18,7 +18,6 @@
 - Lệnh `merge_prelabels.py` đã dùng: `python scripts/merge_prelabels.py work/prelabel/yoloe_all/pre.coco.json work/prelabel/y26_all/pre.coco.json --thr "motorbike=0.35" --conf 0.3 --iou 0.6 --split "batch,gold" --out work/prelabel/merged_review/pre.coco.json`. Kết quả: 373 box trên batch + gold (nguồn: đầu ra lệnh gộp).
 - SAM đã thử: **SAM 2.1 base** (`sam2.1_b.pt`) trên CPU, 10 mask/2 ảnh ở `r06` (4,38 giây/ảnh). Ở `img_013`, SAM tạo mask từ box người; xe ba bánh không có mask vì YOLO26 không cung cấp box lớp này.
 - Lỗi không sửa được bằng ngưỡng: YOLO26 không có lớp `three_wheeler` trong bộ lớp COCO; cần nguồn YOLOE và vẫn phải duyệt bằng mắt.
-- Ví dụ box điểm cao mà sai hoặc điểm thấp mà đúng: **chưa kết luận**, sẽ ghi sau khi duyệt ảnh ở Part 4.
 - Giới hạn: chỉ có 4 ảnh gold; ngưỡng được chọn và số đo máy được tính trên cùng tập này nên precision/recall về sau có thể lạc quan. Các lớp chỉ có 1 vật gold không đủ mẫu để suy ra ngưỡng riêng.
 
 ## 2. AI error profile (từ `qc/review_stats.md`)
